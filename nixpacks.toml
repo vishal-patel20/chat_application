@@ -13,18 +13,30 @@
         "npm run build"
     ]
 
+[phases.run]
+    # Ensure our start script is executable
+    cmds = [ "chmod +x /app/start.sh" ]
+
 [staticAssets]
     "start.sh" = '''
 #!/bin/bash
+set -e
+
+echo "Caching Laravel config and routes..."
+php artisan config:cache
+php artisan route:cache
+
 echo "Running migrations..."
 php artisan migrate --force
 
 echo "Starting Reverb WebSocket Server..."
+# We start Reverb on 8080. Nginx handles the SSL and proxies to this.
 php artisan reverb:start --host="0.0.0.0" --port="8080" &
 
-echo "Starting PHP-FPM and Nginx..."
+echo "Starting PHP-FPM and Nginx Server..."
 php-fpm -y /assets/php-fpm.conf & nginx -c /app/nginx.conf
 '''
 
 [start]
-    cmd = "bash start.sh"
+    cmd = "bash /app/start.sh"
+
