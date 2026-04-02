@@ -19,8 +19,11 @@
 echo "Running migrations..."
 php artisan migrate --force
 
+echo "Starting Reverb WebSocket Server..."
+php artisan reverb:start --host="0.0.0.0" --port="8080" &
+
 echo "Starting PHP-FPM and Nginx..."
-php-fpm -y /assets/php-fpm.conf & nginx -c /assets/nginx.conf
+php-fpm -y /assets/php-fpm.conf & nginx -c /app/nginx.conf
 '''
 
 [start]
