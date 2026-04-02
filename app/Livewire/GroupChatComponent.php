@@ -56,7 +56,7 @@ class GroupChatComponent extends Component
 
         $chatMessage = msg::create([
             'sender_id'   => $this->sender_id,
-            'receiver_id' => null,
+            'receiver_id' => 0, // Using 0 because SQLite migration didn't make this nullable
             'message'     => $this->message,
             'is_group'    => true,
         ]);
