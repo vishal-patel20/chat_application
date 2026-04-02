@@ -1,0 +1,27 @@
+[providers]
+    # Nixpacks automatically detects PHP and Node based on composer.json and package.json
+
+[variables]
+    # Tells Nginx to serve the app from the public directory (required for Laravel)
+    NIXPACKS_PHP_ROOT_DIR = "/app/public"
+
+[phases.build]
+    # Commands executed during the container build phase
+    cmds = [
+        "composer install --no-dev --optimize-autoloader --no-interaction",
+        "npm install",
+        "npm run build"
+    ]
+
+[staticAssets]
+    "start.sh" = '''
+#!/bin/bash
+echo "Running migrations..."
+php artisan migrate --force
+
+echo "Starting PHP-FPM and Nginx..."
+php-fpm -y /assets/php-fpm.conf & nginx -c /assets/nginx.conf
+'''
+
+[start]
+    cmd = "bash start.sh"
