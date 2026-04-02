@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\msg;
 use App\Models\User;
 use Livewire\Component;
+use App\Events\GroupMessageSent;
 
 class GroupChatComponent extends Component
 {
@@ -31,6 +32,24 @@ class GroupChatComponent extends Component
         return view('livewire.group-chat-component');
     }
 
+    public function getListeners()
+    {
+        return [
+            "echo-presence:group.chat,GroupMessageSent" => 'receiveMessage',
+        ];
+    }
+
+    public function receiveMessage($event)
+    {
+        if ($event['senderId'] != $this->sender_id) {
+            $message = msg::find($event['messageId']);
+            if ($message) {
+                $message->load('sender:id,name');
+                $this->appendChatMessage($message);
+            }
+        }
+    }
+
     public function sendmessage()
     {
         $this->validate(['message' => 'required|string|max:1000']);
@@ -44,6 +63,12 @@ class GroupChatComponent extends Component
 
         $chatMessage->load('sender:id,name');
         $this->appendChatMessage($chatMessage);
+
+        try {
+            broadcast(new GroupMessageSent($chatMessage->id, $this->sender_id));
+        } catch (\Exception $e) {
+            // Ignore broadcast exception if Reverb server is down
+        }
 
         $this->message = '';
     }

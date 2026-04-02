@@ -5,6 +5,8 @@ namespace App\Livewire;
 use App\Models\msg;
 use Livewire\Component;
 use App\Models\User;
+use App\Events\MessageSent;
+use Livewire\Attributes\On;
 
 class ChatComponent extends Component
 {
@@ -42,6 +44,25 @@ class ChatComponent extends Component
         return view('livewire.chat-component');
     }
 
+    public function getListeners()
+    {
+        return [
+            "echo-private:chat.{$this->sender_id},MessageSent" => 'receiveMessage',
+        ];
+    }
+
+    public function receiveMessage($event)
+    {
+        // Only append if the message is from the user we are currently chatting with
+        if ($event['senderId'] == $this->receiver_id) {
+            $message = msg::find($event['messageId']);
+            if ($message) {
+                $message->load('sender:id,name', 'receiver:id,name');
+                $this->appendChatMessage($message);
+            }
+        }
+    }
+
     public function sendmessage()
     {
         $this->validate(['message' => 'required|string|max:1000']);
@@ -55,6 +76,12 @@ class ChatComponent extends Component
         // Bug 2 fixed: load relationships then append so the UI updates instantly
         $chatMessage->load('sender:id,name', 'receiver:id,name');
         $this->appendChatMessage($chatMessage);
+
+        try {
+            broadcast(new MessageSent($chatMessage->id, $this->sender_id, $this->receiver_id));
+        } catch (\Exception $e) {
+            // Ignore broadcast exception if Reverb server is down
+        }
 
         $this->message = '';
     }
